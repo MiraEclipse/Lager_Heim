@@ -1,0 +1,28 @@
+services:
+  lager:
+    build: .
+    image: lager-heim:1.0.0
+    container_name: lager-heim
+    restart: unless-stopped
+    ports:
+      # Nur im Heimnetz: optional auf die LAN-Adresse des Pi beschränken, z. B. LAGER_BIND=192.168.178.50
+      - "${LAGER_BIND:-0.0.0.0}:8443:8443"
+    environment:
+      TZ: Europe/Berlin
+      # Zusätzliche Namen/IP-Adressen für das HTTPS-Zertifikat (kommagetrennt)
+      LAGER_TLS_SAN: "${LAGER_TLS_SAN:-}"
+    volumes:
+      - ./data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
