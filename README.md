@@ -10,7 +10,28 @@ und nachvollziehbar, welche Artikel im **Keller** (gemeinsamer Haushaltsbestand)
 - Klassische Desktop-Optik mit Menüleiste, Symbolleiste, Befehlsfeld (z. B. `ZE01`) und Statusleiste
 - Läuft auf dem Raspberry Pi (ARM64), SQLite, HTTPS, keine externen Abhängigkeiten zur Laufzeit
 
-## Lokal auf dem PC testen
+## PC-App für Windows (ohne Docker, ohne Python)
+
+1. Auf GitHub im Repository **Actions → CI** den neuesten erfolgreichen Lauf öffnen und unten unter
+   *Artifacts* **LagerHeim-Windows** herunterladen (ZIP mit `LagerHeim.exe`).
+2. ZIP entpacken und `LagerHeim.exe` doppelklicken. Beim ersten Start warnt Windows SmartScreen, weil das
+   Programm nicht signiert ist: **Weitere Informationen → Trotzdem ausführen**.
+3. Beim ersten Start das Admin-Konto anlegen (Ersteinrichtung), danach anmelden.
+
+Die App öffnet ein eigenes Fenster (Microsoft Edge WebView2, bei Windows 10/11 vorinstalliert) und ist
+nur auf diesem PC erreichbar (127.0.0.1). Beim Schließen des Fensters wird sie beendet.
+Daten, Backups und Logdatei liegen unter `%LOCALAPPDATA%\LagerHeim`.
+
+Selbst bauen (unter Windows):
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements-pc.txt
+pyinstaller --noconfirm --clean LagerHeim.spec    # Ergebnis: dist\LagerHeim.exe
+```
+
+## Lokal auf dem PC testen (Server-Variante)
 
 ### Variante A: mit Docker Desktop (Windows/macOS/Linux)
 

@@ -286,10 +286,41 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ------------------------------------------------------------------ Boot
+// ------------------------------------------------------------------ Ersteinrichtung (PC-Version)
+function showSetup() {
+  clear(root);
+  const user = h("input", { id: "su_user", autocomplete: "username", required: true, maxlength: 32 });
+  const pass = h("input", { id: "su_pass", type: "password", autocomplete: "new-password", required: true });
+  const pass2 = h("input", { id: "su_pass2", type: "password", autocomplete: "new-password", required: true });
+  const msg = h("div", { class: "login-msg" });
+  const row = (id, label, el) => h("div", { class: "frow" }, h("label", { for: id }, label), h("div", { class: "fcell" }, el));
+  const form = h("form", { class: "form", onsubmit: async (e) => {
+    e.preventDefault();
+    if (pass.value !== pass2.value) { msg.textContent = "Die Passwörter stimmen nicht überein."; return; }
+    try {
+      await post("/api/setup", { username: user.value, password: pass.value });
+      const r = await post("/api/login", { username: user.value, password: pass.value });
+      setCsrf(r.csrf);
+      await start();
+    } catch (err) { msg.textContent = err.message; }
+  } },
+  h("p", { class: "dlg-text" }, "Willkommen! Bitte zuerst das Admin-Konto anlegen. Es gibt genau einen Admin; weitere Benutzer legt der Admin später unter ZU01 an."),
+  row("su_user", "Benutzer", user), row("su_pass", "Passwort", pass), row("su_pass2", "Wiederholung", pass2),
+  h("p", { class: "hint" }, "Passwort: mindestens 8 Zeichen."), msg,
+  h("div", { class: "dlg-buttons" }, h("button", { type: "submit", class: "btn btn-primary" }, "Admin anlegen")));
+  root.append(h("div", { class: "login-screen" }, h("div", { class: "window login" },
+    h("div", { class: "titlebar" }, h("span", {}, "Lager Heim – Ersteinrichtung")),
+    h("div", { class: "login-body" }, form))));
+  user.focus();
+}
+
 (async function boot() {
   try {
     await start();
   } catch (e) {
-    showLogin(e instanceof ApiError && e.status === 401 ? "" : e.message);
+    let setup = { needed: false };
+    try { setup = await get("/api/setup", { noRedirect: true }); } catch { /* ignorieren */ }
+    if (setup.needed) showSetup();
+    else showLogin(e instanceof ApiError && e.status === 401 ? "" : e.message);
   }
 })();

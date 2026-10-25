@@ -19,6 +19,8 @@ class Config:
         self.login_max_fails = int(os.environ.get("LAGER_LOGIN_MAX_FEHLVERSUCHE", "5"))
         self.login_lock_base_s = int(os.environ.get("LAGER_LOGIN_SPERRE_SEKUNDEN", "60"))
         self.login_lock_max_s = 3600
+        # Ersteinrichtung des Admins über die Oberfläche (nur PC-Version, Server lauscht nur auf 127.0.0.1)
+        self.setup_allowed = os.environ.get("LAGER_ERSTEINRICHTUNG", "0") == "1"
 
     def ensure_dirs(self) -> None:
         for d in (self.data_dir, self.backup_dir, self.tls_dir):

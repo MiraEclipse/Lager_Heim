@@ -138,3 +138,28 @@ def test_security_headers(app):
     r = Session(app).get("/")
     assert "default-src 'self'" in r.headers["content-security-policy"]
     assert r.headers["x-frame-options"] == "DENY"
+
+
+def test_setup_disabled_on_server(app):
+    from conftest import Session
+    s = Session(app)
+    assert s.get("/api/setup").json() == {"needed": False}
+    assert s.post("/api/setup", {"username": "zweiter", "password": "passwort-1"}).status_code == 403
+
+
+def test_setup_pc_version(tmp_path):
+    from app.config import Config
+    from app.main import create_app
+    from conftest import Session
+    cfg = Config(str(tmp_path / "pc"))
+    cfg.backup_auto = False
+    cfg.setup_allowed = True
+    s = Session(create_app(cfg))
+    assert s.get("/api/setup").json() == {"needed": True}
+    assert s.post("/api/setup", {"username": "admin", "password": "kurz"}).status_code == 400
+    assert s.post("/api/setup", {"username": "admin", "password": "passwort-1"}).status_code == 200
+    # nur einmal möglich: danach gibt es einen Admin
+    assert s.get("/api/setup").json() == {"needed": False}
+    assert s.post("/api/setup", {"username": "admin2", "password": "passwort-1"}).status_code == 403
+    assert s.login("admin", "passwort-1").status_code == 200
+    assert s.get("/api/me").json()["user"]["role"] == "ADMIN"

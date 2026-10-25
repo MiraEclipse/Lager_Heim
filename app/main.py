@@ -105,6 +105,22 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                              (now_iso(), security.token_hash(token)))
         return user
 
+    # ------------------------------------------------------------ Ersteinrichtung (PC-Version)
+    def setup_needed(conn) -> bool:
+        return cfg.setup_allowed and not one(conn.execute("SELECT 1 FROM users WHERE role = 'ADMIN'"))
+
+    @app.get("/api/setup")
+    def setup_status(conn=Depends(get_conn)):
+        return {"needed": setup_needed(conn)}
+
+    @app.post("/api/setup")
+    def setup(request: Request, data: dict = Body(...), conn=Depends(get_conn)):
+        if not setup_needed(conn):
+            raise AppError("Ersteinrichtung ist nicht verfügbar.", 403)
+        users.create_user(conn, None, str(data.get("username", "")), str(data.get("password", "")),
+                          ip_of(request), role=perms.ADMIN)
+        return {"ok": True, "message": "Admin angelegt. Bitte anmelden."}
+
     # ------------------------------------------------------------ Anmeldung
     @app.post("/api/login")
     def login(request: Request, data: dict = Body(...), conn=Depends(get_conn)):
