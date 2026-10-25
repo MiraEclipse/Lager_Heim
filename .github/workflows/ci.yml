@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+
+  windows-app:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Abhängigkeiten
+        run: pip install -r requirements-dev.txt -r requirements-pc.txt
+      - name: Tests unter Windows
+        run: pytest -q
+      - name: LagerHeim.exe bauen
+        run: pyinstaller --noconfirm --clean LagerHeim.spec
+      - name: Selbsttest der fertigen exe
+        shell: pwsh
+        run: |
+          $env:LAGER_SELBSTTEST = "1"
+          $env:LAGER_DATA = "$env:RUNNER_TEMP\lager-selbsttest"
+          $p = Start-Process -FilePath "dist\LagerHeim.exe" -PassThru -Wait
+          Get-Content "$env:LAGER_DATA\lager-heim.log" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Selbsttest fehlgeschlagen (Exit-Code $($p.ExitCode))" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LagerHeim-Windows
+          path: dist/LagerHeim.exe
+          retention-days: 30
